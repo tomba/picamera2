@@ -121,7 +121,7 @@ class DrmPreview(picamera2.previews.null.NullPreview):
                     self.stop_count = picam2.stop_count
 
                 fmt = self.FMT_MAP[cfg.pixel_format]
-                fd = fb.fd(0)
+                fd = fb.planes[0].fd
                 stride = cfg.stride
                 if cfg.pixel_format in ("YUV420", "YVU420"):
                     h2 = height // 2

@@ -19,11 +19,11 @@ class _MappedBuffer:
         import mmap
 
         # Check if the buffer is contiguous and find the total length.
-        fd = self.__fb.fd(0)
+        fd = self.__fb.planes[0].fd
         buflen = 0
-        for i in range(self.__fb.num_planes):
-            buflen = buflen + self.__fb.length(i)
-            if fd != self.__fb.fd(i):
+        for p in self.__fb.planes:
+            buflen = buflen + p.length
+            if fd != p.fd:
                 raise RuntimeError('_MappedBuffer: Cannot map non-contiguous buffer!')
 
         self.__mm = mmap.mmap(fd, buflen, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE)
