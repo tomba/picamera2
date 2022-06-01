@@ -275,8 +275,8 @@ class Picamera2:
         lores = self.make_initial_stream_config({"format": "YUV420", "size": main["size"]}, lores)
         raw = self.make_initial_stream_config({"format": self.sensor_format, "size": main["size"]}, raw)
         # Let the framerate vary from 12fps to as fast as possible.
-        controls = {"NoiseReductionMode": libcamera.NoiseReductionMode.Minimal,
-                    "FrameDurationLimits": (self.camera_controls["FrameDurationLimits"][0], 83333)} | controls
+        controls = {"NoiseReductionMode": libcamera.controls.draft.NoiseReductionModeEnum.Minimal,
+                    "FrameDurationLimits": (self.camera.controls[libcamera.controls.FrameDurationLimits].min, 83333)} | controls
         config = {"use_case": "preview",
                   "transform": transform,
                   "colour_space": colour_space,
@@ -297,8 +297,8 @@ class Picamera2:
         lores = self.make_initial_stream_config({"format": "YUV420", "size": main["size"]}, lores)
         raw = self.make_initial_stream_config({"format": self.sensor_format, "size": main["size"]}, raw)
         # Let the framerate span the entire possible range of the sensor.
-        controls = {"NoiseReductionMode": libcamera.NoiseReductionMode.HighQuality,
-                    "FrameDurationLimits": self.camera_controls["FrameDurationLimits"][0:1]} | controls
+        controls = {"NoiseReductionMode": libcamera.controls.draft.NoiseReductionMode.HighQuality,
+                    "FrameDurationLimits": (self.camera.controls[libcamera.controls.FrameDurationLimits].min, self.camera.controls[libcamera.controls.FrameDurationLimits].max)} | controls
         config = {"use_case": "still",
                   "transform": transform,
                   "colour_space": colour_space,
@@ -328,7 +328,7 @@ class Picamera2:
                 colour_space = libcamera.ColorSpace.Smpte170m()
             else:
                 colour_space = libcamera.ColorSpace.Rec709()
-        controls = {"NoiseReductionMode": libcamera.NoiseReductionMode.Fast,
+        controls = {"NoiseReductionMode": libcamera.controls.draft.NoiseReductionModeEnum.Fast,
                     "FrameDurationLimits": (33333, 33333)} | controls
         config = {"use_case": "video",
                   "transform": transform,
@@ -569,7 +569,13 @@ class Picamera2:
             raise RuntimeError("Camera has not been configured")
         if self.started:
             raise RuntimeError("Camera already started")
-        if self.camera.start(self.controls) >= 0:
+
+        def find_ctrl(name):
+            return next(cid for cid in self.camera.controls if cid.name == name)
+
+        controls = {find_ctrl(k):v for k,v in self.controls.items()}
+
+        if self.camera.start(controls) >= 0:
             for request in self.make_requests():
                 self.camera.queue_request(request)
             self.log.info("Camera started")

@@ -119,7 +119,7 @@ class CompletedRequest:
                     self.request.reuse()
                     with self.picam2.controls_lock:
                         for key, value in self.picam2.controls.items():
-                            id = self.picam2.camera.find_control(key)
+                            id = next(cid for cid in self.picam2.camera.controls if cid.name == key)
                             self.request.set_control(id, value)
                         self.picam2.controls = {}
                         self.picam2.camera.queue_request(self.request)
