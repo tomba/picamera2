@@ -8,16 +8,16 @@ import picamera2.previews.null
 dd = None
 
 class DrmPreview(picamera2.previews.null.NullPreview):
-    FMT_MAP = {
-        "RGB888": pykms.PixelFormat.RGB888,
-        "BGR888": pykms.PixelFormat.BGR888,
-        # doesn't work "YUYV": pykms.PixelFormat.YUYV,
-        # doesn't work "YVYU": pykms.PixelFormat.YVYU,
-        "XRGB8888": pykms.PixelFormat.XRGB8888,
-        "XBGR8888": pykms.PixelFormat.XBGR8888,
-        "YUV420": pykms.PixelFormat.YUV420,
-        "YVU420": pykms.PixelFormat.YVU420,
-    }
+    SUPPORTED_FMTS = set([
+        "RGB888",
+        "BGR888",
+        "XRGB8888",
+        "XBGR8888",
+        "YUV420",
+        "YVU420",
+        # doesn't work "YUYV",
+        # doesn't work "YVYU",
+    ])
 
     def __init__(self, x=0, y=0, width=640, height=480):
         self.init_drm(x, y, width, height)
@@ -82,7 +82,8 @@ class DrmPreview(picamera2.previews.null.NullPreview):
             return
         stream = picam2.stream_map[picam2.display_stream_name]
         cfg = stream.configuration
-        width, height = cfg.size
+        width = cfg.size.width
+        height = cfg.size.height
 
         x, y, w, h = self.window
         # Letter/pillar-box to preserve the image's aspect ratio.
@@ -96,9 +97,9 @@ class DrmPreview(picamera2.previews.null.NullPreview):
             w = new_w
 
         if self.plane is None:
-            if cfg.pixel_format not in self.FMT_MAP:
+            if str(cfg.pixel_format) not in self.SUPPORTED_FMTS:
                 raise RuntimeError(f"Format {cfg.pixel_format} not supported by DRM preview")
-            fmt = self.FMT_MAP[cfg.pixel_format]
+            fmt = pykms.PixelFormat(cfg.pixel_format.fourcc)
 
             self.plane = self.resman.reserve_overlay_plane(self.crtc, fmt)
             if self.plane is None:
@@ -120,10 +121,10 @@ class DrmPreview(picamera2.previews.null.NullPreview):
                     self.drmfbs = {}
                     self.stop_count = picam2.stop_count
 
-                fmt = self.FMT_MAP[cfg.pixel_format]
+                fmt = pykms.PixelFormat(cfg.pixel_format.fourcc)
                 fd = fb.planes[0].fd
                 stride = cfg.stride
-                if cfg.pixel_format in ("YUV420", "YVU420"):
+                if str(cfg.pixel_format) in ("YUV420", "YVU420"):
                     h2 = height // 2
                     stride2 = stride // 2
                     size = height * stride
