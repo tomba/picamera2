@@ -5,9 +5,6 @@ from PIL import Image
 import numpy as np
 import piexif
 
-from pidng.core import PICAM2DNG
-from pidng.camdefs import Picamera2Camera
-
 
 class _MappedBuffer:
     def __init__(self, request, stream):
@@ -219,6 +216,10 @@ class CompletedRequest:
 
     def save_dng(self, filename, name="raw"):
         """Save a DNG RAW image of the raw stream's buffer."""
+
+        from pidng.core import PICAM2DNG
+        from pidng.camdefs import Picamera2Camera
+
         start_time = time.monotonic()
         raw = self.make_array(name)
 
