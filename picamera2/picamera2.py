@@ -628,8 +628,8 @@ class Picamera2:
 
     def get_completed_requests(self) -> List[CompletedRequest]:
         # Return all the requests that libcamera has completed.
-        data = os.read(self.camera_manager.efd, 8)
-        requests = [CompletedRequest(req, self) for req in self.camera_manager.get_ready_requests()
+        reqs = self.camera_manager.get_ready_requests()
+        requests = [CompletedRequest(req, self) for req in reqs
                     if req.status == libcamera.Request.Status.Complete]
         self.frames += len(requests)
         return requests

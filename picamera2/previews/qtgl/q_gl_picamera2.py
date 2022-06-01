@@ -109,7 +109,7 @@ class QGlPicamera2(QWidget):
         self.picamera2 = picam2
         picam2.have_event_loop = True
 
-        self.camera_notifier = QSocketNotifier(self.picamera2.camera_manager.efd,
+        self.camera_notifier = QSocketNotifier(self.picamera2.camera_manager.event_fd,
                                                QtCore.QSocketNotifier.Read,
                                                self)
         self.camera_notifier.activated.connect(self.handle_requests)

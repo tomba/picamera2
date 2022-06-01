@@ -36,8 +36,8 @@ class QPicamera2(QGraphicsView):
         self.enabled = True
 
         self.update_overlay_signal.connect(self.update_overlay)
-        self.camera_notifier = QSocketNotifier(self.picamera2.camera_manager.efd,
-                                               QSocketNotifier.Read, self)
+        self.camera_notifier = QSocketNotifier(self.picamera2.camera_manager.event_fd,
+                                               QtCore.QSocketNotifier.Read, self)
         self.camera_notifier.activated.connect(self.handle_requests)
 
     def cleanup(self):
