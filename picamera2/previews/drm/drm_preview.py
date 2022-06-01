@@ -3,11 +3,11 @@ import pykms
 import mmap
 import numpy as np
 import threading
-from picamera2.previews.null_preview import *
+import picamera2.previews.null
 
 dd = None
 
-class DrmPreview(NullPreview):
+class DrmPreview(picamera2.previews.null.NullPreview):
     FMT_MAP = {
         "RGB888": pykms.PixelFormat.RGB888,
         "BGR888": pykms.PixelFormat.BGR888,

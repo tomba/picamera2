@@ -14,7 +14,6 @@ from PIL import Image
 #from picamera2.encoders import Encoder
 from picamera2.outputs import FileOutput
 from picamera2.utils import initialize_logger
-from picamera2.previews import NullPreview, DrmPreview, QtPreview, QtGlPreview
 from .request import CompletedRequest
 
 
@@ -199,13 +198,21 @@ class Picamera2:
             raise RuntimeError("An event loop is already running")
 
         if preview is None:
-            preview = NullPreview()
+            import picamera2.previews.null
+            preview = picamera2.previews.null.NullPreview()
         elif isinstance(preview, Preview):
-            preview_table = {Preview.NULL: NullPreview,
-                             Preview.DRM: DrmPreview,
-                             Preview.QT: QtPreview,
-                             Preview.QTGL: QtGlPreview}
-            preview = preview_table[preview](**kwargs)
+            if preview == Preview.DRM:
+                import picamera2.previews.drm
+                preview = picamera2.previews.drm.DrmPreview(**kwargs)
+            elif preview == Preview.QT:
+                import picamera2.previews.qt
+                preview = picamera2.previews.qt.QtPreview(**kwargs)
+            elif preview == Preview.QTGL:
+                import picamera2.previews.qtgl
+                preview = picamera2.previews.qtgl.QtGlPreview(**kwargs)
+            else:
+                import picamera2.previews.null
+                preview = picamera2.previews.null.NullPreview(**kwargs)
         else:
             # Assume it's already a preview object.
             pass
