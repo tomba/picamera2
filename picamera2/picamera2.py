@@ -158,8 +158,9 @@ class Picamera2:
             self.camera_controls = self.camera.controls
 
             # The next two lines could be placed elsewhere?
-            self.sensor_resolution = self.camera.properties["PixelArraySize"]
-            self.sensor_format = self.camera.generate_configuration([RAW]).at(0).pixel_format
+            res = self.camera.properties[libcamera.properties.PixelArraySize]
+            self.sensor_resolution = (res.width, res.height)
+            self.sensor_format = str(self.camera.generate_configuration([RAW]).at(0).pixel_format)
 
             self.log.info('Initialization successful.')
             return True
@@ -387,8 +388,8 @@ class Picamera2:
 
     def update_libcamera_stream_config(self, libcamera_stream_config, stream_config, buffer_count) -> None:
         # Update the libcamera stream config with ours.
-        libcamera_stream_config.size = stream_config["size"]
-        libcamera_stream_config.pixel_format = stream_config["format"]
+        libcamera_stream_config.size = libcamera.Size(stream_config["size"][0], stream_config["size"][1])
+        libcamera_stream_config.pixel_format = libcamera.PixelFormat(stream_config["format"])
         libcamera_stream_config.buffer_count = buffer_count
 
     def make_libcamera_config(self, camera_config):
@@ -469,8 +470,8 @@ class Picamera2:
 
     def update_stream_config(self, stream_config, libcamera_stream_config) -> None:
         # Update our stream config from libcamera's.
-        stream_config["format"] = libcamera_stream_config.pixel_format
-        stream_config["size"] = libcamera_stream_config.size
+        stream_config["format"] = str(libcamera_stream_config.pixel_format)
+        stream_config["size"] = (libcamera_stream_config.size.width, libcamera_stream_config.size.height)
         stream_config["stride"] = libcamera_stream_config.stride
         stream_config["framesize"] = libcamera_stream_config.frame_size
 
