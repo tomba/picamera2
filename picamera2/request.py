@@ -3,8 +3,12 @@ import threading
 
 from PIL import Image
 import numpy as np
-import piexif
 
+try:
+    import piexif
+    HAS_PIEXIF = True
+except ImportError:
+    HAS_PIEXIF = False
 
 class _MappedBuffer:
     def __init__(self, request, stream):
@@ -197,15 +201,20 @@ class CompletedRequest:
                 # Nasty hack. Qt doesn't understand RGBX so we have to use RGBA. But saving a JPEG
                 # doesn't like RGBA to we have to bodge that to RGBX.
                 img.mode = "RGBX"
-            # Make up some extra EXIF data.
-            metadata = self.get_metadata()
-            zero_ifd = {piexif.ImageIFD.Make: "Raspberry Pi",
-                        piexif.ImageIFD.Model: self.picam2.camera.id,
-                        piexif.ImageIFD.Software: "Picamera2"}
-            total_gain = metadata["AnalogueGain"] * metadata["DigitalGain"]
-            exif_ifd = {piexif.ExifIFD.ExposureTime: (metadata["ExposureTime"], 1000000),
-                        piexif.ExifIFD.ISOSpeedRatings: int(total_gain * 100)}
-            exif = piexif.dump({"0th": zero_ifd, "Exif": exif_ifd})
+
+            if HAS_PIEXIF:
+                # Make up some extra EXIF data.
+                metadata = self.get_metadata()
+                zero_ifd = {piexif.ImageIFD.Make: "Raspberry Pi",
+                            piexif.ImageIFD.Model: self.picam2.camera.id,
+                            piexif.ImageIFD.Software: "Picamera2"}
+                total_gain = metadata["AnalogueGain"] * metadata["DigitalGain"]
+                exif_ifd = {piexif.ExifIFD.ExposureTime: (metadata["ExposureTime"], 1000000),
+                            piexif.ExifIFD.ISOSpeedRatings: int(total_gain * 100)}
+                exif = piexif.dump({"0th": zero_ifd, "Exif": exif_ifd})
+            else:
+                exif = bytes()
+
         # compress_level=1 saves pngs much faster, and still gets most of the compression.
         png_compress_level = self.picam2.options.get("compress_level", 1)
         jpeg_quality = self.picam2.options.get("quality", 90)
