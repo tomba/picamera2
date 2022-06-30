@@ -176,11 +176,12 @@ class Picamera2:
 
     def open_camera(self) -> None:
         if self.initialize_camera():
-            if self.camera.acquire() >= 0:
+            try:
+                self.camera.acquire()
                 self.is_open = True
                 self.log.info("Camera now open.")
-            else:
-                raise RuntimeError("Failed to acquire camera")
+            except Exception as e:
+                raise RuntimeError("Failed to acquire camera") from e
         else:
             raise RuntimeError("Failed to initialize camera")
 
@@ -461,8 +462,10 @@ class Picamera2:
                 raise RuntimeError("Could not create request")
 
             for stream in self.streams:
-                if request.add_buffer(stream, self.allocator.buffers(stream)[i]) < 0:
-                    raise RuntimeError("Failed to set request buffer")
+                try:
+                    request.add_buffer(stream, self.allocator.buffers(stream)[i])
+                except Exception as e:
+                    raise RuntimeError("Failed to set request buffer") from e
 
             requests.append(request)
 
@@ -510,8 +513,10 @@ class Picamera2:
             self.log.info("Camera configuration has been adjusted!")
 
         # Configure libcamera.
-        if self.camera.configure(libcamera_config):
-            raise RuntimeError("Configuration failed: {}".format(camera_config))
+        try:
+            self.camera.configure(libcamera_config)
+        except Exception as e:
+            raise RuntimeError("Configuration failed: {}".format(camera_config)) from e
         self.log.info("Configuration successful!")
         self.log.debug(f"Final configuration: {camera_config}")
 
@@ -533,9 +538,11 @@ class Picamera2:
         self.streams = [stream_config.stream for stream_config in libcamera_config]
         self.allocator = libcamera.FrameBufferAllocator(self.camera)
         for i, stream in enumerate(self.streams):
-            if self.allocator.allocate(stream) < 0:
+            try:
+                self.allocator.allocate(stream)
+            except Exception as e:
                 self.log.critical("Failed to allocate buffers.")
-                raise RuntimeError("Failed to allocate buffers.")
+                raise RuntimeError("Failed to allocate buffers.") from e
             msg = f"Allocated {len(self.allocator.buffers(stream))} buffers for stream {i}."
             self.log.debug(msg)
 
@@ -576,14 +583,15 @@ class Picamera2:
 
         controls = {find_ctrl(k):v for k,v in self.controls.items()}
 
-        if self.camera.start(controls) >= 0:
+        try:
+            self.camera.start(controls)
             for request in self.make_requests():
                 self.camera.queue_request(request)
             self.log.info("Camera started")
             self.started = True
-        else:
+        except Exception as e:
             self.log.error("Camera did not start properly.")
-            raise RuntimeError("Camera did not start properly.")
+            raise RuntimeError("Camera did not start properly.") from e
 
     def start(self, event_loop=True) -> None:
         """Start the camera system running. Camera controls may be sent to the
